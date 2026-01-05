@@ -1,0 +1,9 @@
+geopandas
+shapely
+fiona
+pyogrio
+pandas
+numpy
+pytest
+pytest-cov
+matplotlib
