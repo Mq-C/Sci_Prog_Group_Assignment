@@ -1,2 +1,0 @@
-data/raw/*.gpkg filter=lfs diff=lfs merge=lfs -text
-data/processed[[:space:]]data/*gpkg filter=lfs diff=lfs merge=lfs -text
