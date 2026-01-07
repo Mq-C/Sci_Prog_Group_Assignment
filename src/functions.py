@@ -3,6 +3,9 @@ import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.lines import Line2D
+from shapely.geometry import Point
+from scipy.spatial import KDTree
+from collections import deque
 
 ######################################
 #function to load layers and check crs
@@ -21,7 +24,7 @@ def check_crs(gdf):
 #function for elevation difference analysis
 ###########################################
 
-def point_to_xy(gdf: gpd.GeoDataFrame,value_column:str)->pd.DataFrame:
+def point_to_xy(gdf: gpd.GeoDataFrame,value_column:str,decimals: int =1)->pd.DataFrame:
 
     #check if value_column(elevation value column) exists in gdf
     if value_column not in gdf.columns:
@@ -51,7 +54,7 @@ def point_to_xy(gdf: gpd.GeoDataFrame,value_column:str)->pd.DataFrame:
 #The following function: bool = True/False to return as GeoDataFrame or DataFrame
 def match_by_xy_and_diff(gdf1: gpd.GeoDataFrame, gdf2: gpd.GeoDataFrame, 
                          value_column: str,
-                         decimals: int = 3,
+                         decimals: int = 1,
                          as_geodataframe: bool = True)-> gpd.GeoDataFrame | pd.DataFrame:
     
     #convert spatial data to simple x,y,value dataframe
@@ -94,7 +97,84 @@ def match_by_xy_and_diff(gdf1: gpd.GeoDataFrame, gdf2: gpd.GeoDataFrame,
         return result
     return matched_points
 
-        
+#############
+####KD tree##
+#############
+def filter_out_sinking_point(elev_diff_gdf:gpd.GeoDataFrame)->gpd.GeoDataFrame:
+    #filter out sinking points where elev_diff >0
+    if 'elev_diff' not in elev_diff_gdf.columns:
+        raise KeyError("elev_diff column not found in GeoDataFrame.")
+    
+    df = elev_diff_gdf[elev_diff_gdf['elev_diff'] > 0].copy()
+    return df.reset_index(drop=True)
+
+def KD_clustering(gdf: gpd.GeoDataFrame):
+    df = filter_out_sinking_point(gdf)
+    if df.empty:
+        return df
+
+    coords = np.c_[df.geometry.x,df.geometry.y]
+
+    tree = KDTree(coords)
+
+    radius = 10000 #in m
+    n = len(coords)
+    labels = -np.ones(n,dtype=int)
+    cluster_id =0
+
+    for i in range(n):
+        if labels[i] != -1:
+            continue
+
+        labels[i] =cluster_id
+        queue = deque([i])
+
+        while queue:
+            idx = queue.popleft()
+            neighbors = tree.query_ball_point(coords[idx],r=radius)
+
+            for nb in neighbors:
+                if labels[nb] ==-1:
+                    labels[nb]=cluster_id
+                    queue.append(nb)
+    
+        cluster_id +=1
+
+    df['cluster']=labels
+    return df
+  
+import matplotlib.pyplot as plt
+
+def plot_clusters(clustered_gdf):
+    # Check if the GeoDataFrame is empty
+    if clustered_gdf.empty:
+        print("No sinking points found to plot.")
+        return
+
+    # Create the plot
+    fig, ax = plt.subplots(figsize=(10, 10))
+    
+    # Plot clusters using a qualitative colormap (like 'tab20' or 'Set3')
+    clustered_gdf.plot(
+        column='cluster', 
+        categorical=True, 
+        legend=True, 
+        markersize=5, 
+        cmap='tab20', 
+        ax=ax,
+        legend_kwds={'title': "Cluster ID", 'bbox_to_anchor': (1, 1)}
+    )
+    
+    plt.title("Spatial Clustering of Sinking Points (10km Radius)")
+    plt.xlabel("RD Easting (m)")
+    plt.ylabel("RD Northing (m)")
+    plt.show()
+
+
+
+
+
+
 
  
     
