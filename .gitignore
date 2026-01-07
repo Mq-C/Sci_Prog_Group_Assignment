@@ -210,3 +210,4 @@ __marimo__/
 *.dbf
 *.shp
 *.shx
+outputs/

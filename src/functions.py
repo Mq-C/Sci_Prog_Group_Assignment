@@ -6,6 +6,7 @@ from matplotlib.lines import Line2D
 from shapely.geometry import Point
 from scipy.spatial import KDTree
 from collections import deque
+import os
 
 ######################################
 #function to load layers and check crs
@@ -71,34 +72,35 @@ def match_by_xy_and_diff(gdf1: gpd.GeoDataFrame, gdf2: gpd.GeoDataFrame,
     num_negative_stable = (matched_points['elev_diff'] <= 0).sum()
     total = len(matched_points)
     
+    
     # Print the stats to the console
     print(f"Analysis Summary:")
-    print(f"  - Rising points (Positive): {num_positive} ({(num_positive/total)*100:.1f}%)")
-    print(f"  - Sinking/Stable points (Negative/Zero): {num_negative_stable} ({(num_negative_stable/total)*100:.1f}%)")
+    print(f"  - Sinking points (Positive): {num_positive} ({(num_positive/total)*100:.1f}%)")
+    print(f"  - Rising/Stable points (Negative/Zero): {num_negative_stable} ({(num_negative_stable/total)*100:.1f}%)")
 
     if as_geodataframe:
         geometry = gpd.points_from_xy(matched_points['x'], matched_points['y'])
         result = gpd.GeoDataFrame(matched_points, geometry=geometry, crs="EPSG:28992")
 
         #add color column based on elev_diff, if elev_diff >0:red, < or =0:green
-        result['color'] = 'green'
-        result.loc[result['elev_diff'] > 0, 'color'] = 'red'
+        #result['color'] = 'green'
+        #result.loc[result['elev_diff'] > 0, 'color'] = 'red'
 
-        fig,ax = plt.subplots(figsize=(10,10))
-        result.plot(ax=ax, color=result['color'], markersize=5)
-        legend_elements = [
-            Line2D([0], [0], marker='o', color='w', label='elev_diff <= 0', markerfacecolor='green', markersize=8),
-            Line2D([0], [0], marker='o', color='w', label='elev_diff > 0', markerfacecolor='red', markersize=8)
-        ]
-        ax.legend(handles=legend_elements, title='Elevation Difference (m)')
-        ax.set_title('Gronigen Elevation Difference between AHN2 and AHN4 Points')
-        ax.set_axis_off()
-        plt.show()
+        #fig,ax = plt.subplots(figsize=(10,10))
+        #result.plot(ax=ax, color=result['color'], markersize=5)
+        #legend_elements = [
+        #    Line2D([0], [0], marker='o', color='w', label='elev_diff <= 0', markerfacecolor='green', markersize=8),
+       #     Line2D([0], [0], marker='o', color='w', label='elev_diff > 0', markerfacecolor='red', markersize=8)
+       # ]
+       # ax.legend(handles=legend_elements, title='Elevation Difference (m)')
+       # ax.set_title('Gronigen Elevation Difference between AHN2 and AHN4 Points')
+       # ax.set_axis_off()
+       # plt.show()
         return result
     return matched_points
 
 #############
-####KD tree##
+###KD tree###
 #############
 def filter_out_sinking_point(elev_diff_gdf:gpd.GeoDataFrame)->gpd.GeoDataFrame:
     #filter out sinking points where elev_diff >0
@@ -106,18 +108,29 @@ def filter_out_sinking_point(elev_diff_gdf:gpd.GeoDataFrame)->gpd.GeoDataFrame:
         raise KeyError("elev_diff column not found in GeoDataFrame.")
     
     df = elev_diff_gdf[elev_diff_gdf['elev_diff'] > 0].copy()
+    print(df['elev_diff'].describe())
     return df.reset_index(drop=True)
 
-def KD_clustering(gdf: gpd.GeoDataFrame):
-    df = filter_out_sinking_point(gdf)
+def between_20_and_50cm_diff(elev_diff_gdf:gpd.GeoDataFrame)->gpd.GeoDataFrame:
+    #considering only points with elevation difference between 20 and 50cm
+    if 'elev_diff' not in elev_diff_gdf.columns:
+        raise KeyError("elev_diff column not found in GeoDataFrame.")
+    
+    df = elev_diff_gdf[(elev_diff_gdf['elev_diff'] >= 0.2) & (elev_diff_gdf['elev_diff'] <= 0.5)].copy()
+  
+    return df.reset_index(drop=True)
+
+
+def KD_clustering(gdf: gpd.GeoDataFrame,seed: int =43):
+    df = between_20_and_50cm_diff(gdf)
     if df.empty:
         return df
 
+    df = df.reset_index(drop=True)
+
     coords = np.c_[df.geometry.x,df.geometry.y]
-
     tree = KDTree(coords)
-
-    radius = 10000 #in m
+    radius = 50 #in meters
     n = len(coords)
     labels = -np.ones(n,dtype=int)
     cluster_id =0
@@ -139,35 +152,78 @@ def KD_clustering(gdf: gpd.GeoDataFrame):
                     queue.append(nb)
     
         cluster_id +=1
+    unique_clusters = len(np.unique(labels[labels != -1]))
+    print(f"Total clusters generated: {unique_clusters}")
+    df['cluster'] = labels
+    
+    # sort by count (descending) and take the top 5
+    # exclude -1 if it exists (usually noise/unassigned points)
+    top_5_clusters = df[df['cluster'] != -1]['cluster'].value_counts().head(5)
+    top_5_ids=top_5_clusters.index.tolist()
+    top_5_df = df[df['cluster'].isin(top_5_ids)].copy()
+    
+    
+    print("\n--- Top 5 Cluster Analysis Summary ---")
+    print(f"Total unique clusters found: {len(np.unique(labels[labels != -1]))}")
+    
+    if top_5_clusters.empty:
+        print("No clusters were generated.")
+    else:
+        for cid, count in top_5_clusters.items():
+            print(f"Cluster {cid}: {count} points")
+    print("-------------------------------------\n")
 
-    df['cluster']=labels
+    #save top 3 clusters as geopackage
+    output_path = 'F:/master/mod_2/Sci_Prog_For_Geospatial_Sciences/Sci_Prog_Group_Assignment/outputs/top 5 sinking clusters'
+    
+    df.to_file(output_path,driver ='GPKG',layer ='top 5 sinking clusters',mode='w')
     return df
-  
-import matplotlib.pyplot as plt
 
-def plot_clusters(clustered_gdf):
-    # Check if the GeoDataFrame is empty
-    if clustered_gdf.empty:
+def plot_clusters(clustered_gdf,boundary_path):
+
+    #Groningen boundary
+    boundary = gpd.read_file(boundary_path)
+
+
+    if clustered_gdf is None or clustered_gdf.empty:
         print("No sinking points found to plot.")
         return
 
-    # Create the plot
-    fig, ax = plt.subplots(figsize=(10, 10))
+    # find the top 5 clusters by point count
+    # exclude -1 (noise) to ensure only get valid clusters
+    top_5_ids = clustered_gdf[clustered_gdf['cluster'] != -1]['cluster'].value_counts().head(5).index.tolist()
+
+    if not top_5_ids:
+        print("No valid clusters found to plot.")
+        return
+
+    # filter the gdf to only include those 3 clusters
+    plot_gdf = clustered_gdf[clustered_gdf['cluster'].isin(top_5_ids)].copy()
     
-    # Plot clusters using a qualitative colormap (like 'tab20' or 'Set3')
-    clustered_gdf.plot(
+    # plot using categorical=True for distinct cluster IDs
+    fig, ax = plt.subplots(figsize=(10, 10))
+    boundary.plot(ax=ax,
+                  color='none',
+                  edgecolor='black',
+                  linewidth=1,
+                  label='Groningen boundary',
+                 )
+    plot_gdf.plot(
         column='cluster', 
         categorical=True, 
         legend=True, 
         markersize=5, 
-        cmap='tab20', 
+        cmap='tab10', #use tab10 as it's cleaner for just 5 groups
         ax=ax,
-        legend_kwds={'title': "Cluster ID", 'bbox_to_anchor': (1, 1)}
+        legend_kwds={'title': "Top 5 Cluster IDs", 'bbox_to_anchor': (1.3, 1)}
     )
     
-    plt.title("Spatial Clustering of Sinking Points (10km Radius)")
-    plt.xlabel("RD Easting (m)")
-    plt.ylabel("RD Northing (m)")
+    # add Dutch RD New coordinate details
+    plt.title("Top 5 Sinking Areas (20cm-50cm Range) in Groningen (AHN2 and AHN4)")
+    plt.xlabel("RD Easting (meters)")
+    plt.ylabel("RD Northing (meters)")
+    plt.grid(False)
+    
     plt.show()
 
 
