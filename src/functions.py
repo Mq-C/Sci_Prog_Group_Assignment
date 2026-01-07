@@ -174,7 +174,7 @@ def KD_clustering(gdf: gpd.GeoDataFrame,seed: int =43):
     print("-------------------------------------\n")
 
     #save top 3 clusters as geopackage
-    output_path = "F:/master/mod_2/Sci_Prog_For_Geospatial_Sciences/Sci_Prog_Group_Assignment/outputs/top 5 clusters"
+    output_path = "F:/master/mod_2/Sci_Prog_For_Geospatial_Sciences/Sci_Prog_Group_Assignment/outputs/top 5 sinking clusters"
     
     top_5_df.to_file(output_path,driver ='GPKG',layer ='top 5 sinking clusters',mode='w')
     return df
