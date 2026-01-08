@@ -1,4 +1,10 @@
-from src.functions import match_by_xy_and_diff, load_layers, check_crs,KD_clustering,plot_clusters,between_20_and_50cm_diff
+from src.functions import (match_by_xy_and_diff,
+                            load_layers, 
+                            check_crs,
+                            KD_clustering,
+                            plot_clusters,
+                            between_20_and_50cm_diff,
+                            match_pop_poly_by_id)
 from pathlib import Path
 
 
@@ -14,25 +20,47 @@ data_paths = {
     'ahn4': elevation_AHN4_path,
     'pop_2010':population_2010_path,
     'pop_2020':population_2020_path,
-    'groningen_boundary':groningen_boundary_path
+    'groningen_boundary':groningen_boundary_path,
+    'cluster_poly':cluster_poly_path
 }
+run_elevation =True
+run_population=True
+
+def run_elevation_analysis(layers):
+    print("Performing elevation difference analysis between AHN2 and AHN4")
+    result = match_by_xy_and_diff(layers['ahn2'], layers['ahn4'], value_column='VALUE', as_geodataframe=True)
+
+    sinking_points_df = between_20_and_50cm_diff(result)
+    print(f"Number of sinking points (elev_diff between 20 and 50cm): {len(sinking_points_df)}")
+
+    #KD tree
+    clustered_data = KD_clustering(sinking_points_df)
+    return clustered_data
+   
+
+def run_population_analysis(layers):
+    print("Matching population polygons and clipping it to cluster polygons")
+    pop_analysis_gdf = match_pop_poly_by_id(
+        layers['pop_2010'],
+        layers['pop_2020'],
+        layers['cluster_poly'])
 
 def main():
     layers ={name: load_layers(path) for name,path in data_paths.items()}
     for name,gdf in layers.items():
         check_crs(gdf)
 
+    if run_elevation:
+        cluster_data=run_elevation_analysis(layers)
+        print("Generating plot")
+        plot_clusters(cluster_data,layers['groningen_boundary'])
+    
+    #if run_population:
 
-    print("Performing elevation difference analysis between AHN2 and AHN4")
-    result = match_by_xy_and_diff(layers['ahn2'], layers['ahn4'], value_column='VALUE', as_geodataframe=True)
 
-    sinking_points_df = between_20_and_50cm_diff(result)
 
-    print(f"Number of sinking points (elev_diff between 20 and 50cm): {len(sinking_points_df)}")
+    
 
-    clustered_data = KD_clustering(sinking_points_df)
-    print("Generating plot")
-    plot_clusters(clustered_data,layers['groningen_boundary'])
 
 if __name__ == "__main__":
     main()
