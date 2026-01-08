@@ -174,16 +174,12 @@ def KD_clustering(gdf: gpd.GeoDataFrame,seed: int =43):
     print("-------------------------------------\n")
 
     #save top 3 clusters as geopackage
-    output_path = "F:/master/mod_2/Sci_Prog_For_Geospatial_Sciences/Sci_Prog_Group_Assignment/outputs/top 5 sinking clusters"
+    output_path = "F:/master/mod_2/Sci_Prog_For_Geospatial_Sciences/Sci_Prog_Group_Assignment/outputs/top 5 sinking clusters.gpkg"
     
     top_5_df.to_file(output_path,driver ='GPKG',layer ='top 5 sinking clusters',mode='w')
     return df
 
-def plot_clusters(clustered_gdf,boundary_path):
-
-    #Groningen boundary
-    boundary = gpd.read_file(boundary_path)
-
+def plot_clusters(clustered_gdf,boundary_gdf):
 
     if clustered_gdf is None or clustered_gdf.empty:
         print("No sinking points found to plot.")
@@ -202,7 +198,7 @@ def plot_clusters(clustered_gdf,boundary_path):
     
     # plot using categorical=True for distinct cluster IDs
     fig, ax = plt.subplots(figsize=(10, 10))
-    boundary.plot(ax=ax,
+    boundary_gdf.plot(ax=ax,
                   color='none',
                   edgecolor='black',
                   linewidth=1,
@@ -226,22 +222,78 @@ def plot_clusters(clustered_gdf,boundary_path):
     
     plt.show()
 
+#############################################
+##Population analysis on the top 5 clusters##
+#############################################
 
-
-
-
-
-
- 
+#change population polygons id column to a common name
+def clean_population_layers(gdf_input,year):
     
+    gdf = gdf_input.copy()
 
-    
-
-def rename_pop_id(gdf):
+    #rename the ID column to a common name for both population layers
     if 'C28992R100' in gdf.columns:
-        return gdf.rename(columns={'C28992R100': 'grid_id'})
+        gdf=gdf.rename(columns={'C28992R100': 'grid_id'})
     
-    if 'crs28992res100m' in gdf.columns:
-        return gdf.rename(columns={'crs28992res100m': 'grid_id'})
+    elif 'crs28992res100m' in gdf.columns:
+        gdf=gdf.rename(columns={'crs28992res100m': 'grid_id'})
+    else:
+        raise KeyError("No recognized population ID column found.")
+
+    #rename the population count layer to a common name
+    if year ==2010:
+        if 'INW2010' in gdf.columns:
+            gdf = gdf.rename(columns={'INW2010':'pop_count'})
+    elif year == 2020:
+        if 'aantal_inwoners' in gdf.columns:
+            gdf = gdf.rename(columns={'aantal_inwoners':'pop_count'})
+
+    #filter out no data '-9998'
+    no_data_value = [-99998,-99997]
+    gdf = gdf[~gdf['pop_count'].isin(no_data_value)].copy()
+
+    return gdf[['grid_id','pop_count','geometry']]
+
+def population_analysis(pop_2010_gdf,pop_2020_gdf,cluster_poly):
+    pop_2010 = clean_population_layers(pop_2010_gdf,2010)
+    pop_2020 = clean_population_layers(pop_2020_gdf,2020)
+
+    matched_pop_df = pd.merge(
+        pop_2010,
+        pop_2020.drop(columns='geometry'),
+        on='grid_id',
+        suffixes=('_2010','_2020')
+    )
+
+    matched_pop_gdf = gpd.GeoDataFrame(matched_pop_df,geometry='geometry',crs='EPSG:28992')
+
+    print(f'Total population polygons matched between 2010 and 2020: {len(matched_pop_df)}')
+
+    #clip population polygon to the 5 cluster
+    clipped_pop = gpd.sjoin(matched_pop_df,
+                            cluster_poly[['cluster_id','geometry']],
+                            how='inner',
+                            predicate='intersects').copy()
     
-    raise KeyError("No recognized population ID column found.")
+    print(f'Totlal matched popualtion polygons  within the 5 clusters: {len(clipped_pop)}')
+
+    #calculate difference
+    clipped_pop['pop_diff'] =(clipped_pop['pop_count_2020']-clipped_pop['pop_count_2010'])
+
+    clipped_pop['trend']=np.select(
+        [clipped_pop['pop_diff']>0,clipped_pop['pop_diff']<0,clipped_pop['pop_diff']==0],
+        ['Increased','Decreased','No change'],
+        default='No change'
+    )
+    summary =clipped_pop.groupby(['cluster_id','trend']).size().unstack(fill_value=0)
+    print('---Population trend summary by cluster id')
+    print(summary)
+
+
+    return clipped_pop,summary
+
+
+
+
+
+
