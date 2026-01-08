@@ -40,7 +40,7 @@ def run_elevation_analysis(layers):
 
 def run_population_analysis(layers):
     print("Matching population polygons and clipping it to cluster polygons")
-    clipped_pop = match_pop_poly_by_id(
+    clipped_pop_gdf,trend_summary = match_pop_poly_by_id(
         layers['pop_2010'],
         layers['pop_2020'],
         layers['cluster_poly'])
@@ -48,10 +48,10 @@ def run_population_analysis(layers):
     #plotting population polygons within the 5 clusters
     fig,ax =plt.subplots(figsize=(10,10))
     layers['cluster_poly'].plot(ax=ax,facecolor='none',edgecolor='blue',linewidth=1)
-    clipped_pop.plot(ax=ax,column='pop_count_2010',alpha=0.7,legend=True)
+    clipped_pop_gdf.plot(ax=ax,column='pop_diff',cmap='RdYlGn',legend=True,edgecolor='none')
 
     plt.show()
-    return clipped_pop
+    return clipped_pop_gdf
 
 
 def main():
