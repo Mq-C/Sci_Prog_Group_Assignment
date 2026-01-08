@@ -148,9 +148,9 @@ def test_math_inner_join():
 
 
 
-#############################
-#Tests for population layers#
-#############################
+###############################
+#Tests for population analysis#
+###############################
 
 def test_if_population_columns_exist():
     pop_2010  = load_layers(population_2010_path)
