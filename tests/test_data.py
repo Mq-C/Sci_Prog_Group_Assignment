@@ -2,7 +2,10 @@ import geopandas as gpd
 import pandas as pd
 import pytest
 from shapely.geometry import Point, Polygon
-from src.functions import load_layers, check_crs,rename_pop_id, match_by_xy_and_diff
+from src.functions import (load_layers, 
+                           check_crs,
+                           match_by_xy_and_diff,
+                           clean_population_layers)
 import numpy as np
 
 
@@ -79,9 +82,9 @@ def test_loaded_poly_is_valid():
     assert pop_2010.is_valid.all()
     assert pop_2020.is_valid.all()
 
-############################
-#Tests for elevation layers#
-############################
+#####################################
+#Tests for elevation change analysis#
+#####################################
 def test_match_elev_points_does_not_change_inputs():
     #this test make sure that the function match_by_xy_and_diff 
     #does not modidy the input data
@@ -152,21 +155,14 @@ def test_math_inner_join():
 #Tests for population analysis#
 ###############################
 
-def test_if_population_columns_exist():
-    pop_2010  = load_layers(population_2010_path)
-    pop_2020  = load_layers(population_2020_path)
+def test_clean_population_layers():
+    path_2010 = '"F:/master/mod_2/Sci_Prog_For_Geospatial_Sciences/Pair assignment/data/Pop_2010.gpkg"'
 
-    assert 'INW2010' in pop_2010.columns
-    assert 'aantal_inwoners' in pop_2020.columns
+    pop_2010 = clean_population_layers(population_2010_path,2010)
 
-def test_rename_pop_id():
-    pop_2010 = load_layers(population_2010_path)
-    pop_2020 = load_layers(population_2020_path)
-
-    renamed_pop_2010 = rename_pop_id(pop_2010)
-    renamed_pop_2020 = rename_pop_id(pop_2020)
-
-    assert 'grid_id' in renamed_pop_2010.columns
-    assert 'grid_id' in renamed_pop_2020.columns
-    assert renamed_pop_2010['grid_id'].notna().all()
-    assert renamed_pop_2020['grid_id'].notna().all()
+    assert isinstance(pop_2010,gpd.GeoDataFrame)
+    assert 'grid_id' in pop_2010.columns
+    assert 'pop_count' in pop_2010.columns
+    
+    #ensure no data values are removed
+    assert not pop_2010['pop_count'].isin([-99997,-99998]).any()
