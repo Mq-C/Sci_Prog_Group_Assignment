@@ -242,9 +242,11 @@ def clean_population_layers(gdf_input,year):
 
     #rename the population count layer to a common name
     if year ==2010:
-        gdf = gdf.rename(columns={'INW2010':'pop_count'})
+        if 'INW2010' in gdf.columns:
+            gdf = gdf.rename(columns={'INW2010':'pop_count'})
     elif year == 2020:
-        gdf = gdf.rename(columns={'aantal_inwoners':'pop_count'})
+        if 'aantal_inwoners' in gdf.columns:
+            gdf = gdf.rename(columns={'aantal_inwoners':'pop_count'})
 
     #filter out no data '-9998'
     no_data_value = [-99998,-99997]
@@ -263,11 +265,10 @@ def match_pop_poly_by_id(pop_2010_gdf,pop_2020_gdf,cluster_poly):
         suffixes=('_2010','_2020')
     )
 
-    matched_pop_gdf = gpd.GeoDataFrame(matched_pop_df,geometry='geometry',crs='EPSG:28992')
     print(f'Total population polygons matched between 2010 and 2020: {len(matched_pop_df)}')
 
     #clip population polygon to the 5 cluster
-    clipped_pop = gpd.clip(matched_pop_gdf,cluster_poly)
+    clipped_pop = gpd.clip(matched_pop_df,cluster_poly)
     print(f'Totlal matched popualtion polygons  within the 5 clusters: {len(clipped_pop)}')
 
     return clipped_pop
