@@ -1,3 +1,7 @@
+######################################
+#Import the main libraries
+######################################
+
 import geopandas as gpd
 import pandas as pd
 import numpy as np
@@ -7,6 +11,68 @@ from shapely.geometry import Point
 from scipy.spatial import KDTree
 from collections import deque
 import os
+import requests
+import json
+import geojson
+from matplotlib.cm import get_cmap
+from shapely.ops import unary_union
+from matplotlib.patches import Patch
+import math
+import fiona
+from pyproj import CRS
+from shapely.geometry import MultiPoint, Polygon, MultiPolygon
+
+######################################
+#function request bounary layer
+######################################
+# Creating a function to request Administrative boundaries via PDOK an using as a parameter a endpoint in the function an return a geojson file
+
+ 
+def get_feature(endpoint):
+
+    all_features = []
+    start_index = 0
+    count = 1000
+
+    while True:
+        params = {
+            'request': 'GetFeature',
+            'service': 'WFS',
+            'version': '2.0.0',
+            'typeNames': 'bestuurlijkegebieden:Gemeentegebied',
+            'outputFormat': 'application/json',
+            'crs': 'urn:ogc:def:crs:EPSG::28992',
+            'count': count,
+            'startIndex': start_index
+        }
+    
+        response = requests.get(endpoint, params=params)
+    
+        if response.status_code != 200:
+            print(response.text)
+            break
+    
+        data = response.json()
+
+        features = data["features"]                     # Extract the values stored in data under the key word 'features'.
+    
+        if not features:
+            break
+
+        all_features.extend(features)                   # add elementes from the previous step (features) to the end of a list.
+        start_index += count
+
+        print(f"Downloaded {len(all_features)} features")
+
+    # build final GeoJSON
+    full_geojson = {
+        "type": "FeatureCollection",
+        "features": all_features
+            }
+
+    with open("Administrative_boundaties.geojson", "w") as f:
+        geojson.dump(full_geojson, f, indent=4)
+
 
 #################################
 ##Request boundary layer#########
