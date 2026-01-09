@@ -74,9 +74,13 @@ def get_feature(endpoint):
         geojson.dump(full_geojson, f, indent=4)
 
 
-######################################
-#function to load layers and check crs
-######################################
+#################################
+##Request boundary layer#########
+#################################
+
+#######################################
+#function to load layers and check crs#
+#######################################
 def load_layers(file_path):
     return gpd.read_file(file_path)
 
@@ -289,8 +293,19 @@ def plot_clusters(clustered_gdf,boundary_gdf):
     plt.show()
 
 #############################################
+##Generating polygons top 5 clusters#########
+#############################################
+
+
+#############################################
+##CLipping datasets to the 5 polygons########
+#############################################
+
+
+#############################################
 ##Population analysis on the top 5 clusters##
 #############################################
+
 
 #change population polygons id column to a common name
 def clean_population_layers(gdf_input,year):

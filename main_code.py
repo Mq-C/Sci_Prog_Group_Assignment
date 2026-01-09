@@ -4,7 +4,7 @@ from src.functions import (match_by_xy_and_diff,
                             KD_clustering,
                             plot_clusters,
                             between_20_and_50cm_diff,
-                            match_pop_poly_by_id)
+                            population_analysis)
 import matplotlib.pyplot as plt
 
 
@@ -26,6 +26,7 @@ data_paths = {
 run_elevation =True
 run_population=True
 
+
 def run_elevation_analysis(layers):
     print("Performing elevation difference analysis between AHN2 and AHN4")
     result = match_by_xy_and_diff(layers['ahn2'], layers['ahn4'], value_column='VALUE', as_geodataframe=True)
@@ -40,7 +41,7 @@ def run_elevation_analysis(layers):
 
 def run_population_analysis(layers):
     print("Matching population polygons and clipping it to cluster polygons")
-    clipped_pop_gdf,trend_summary = match_pop_poly_by_id(
+    clipped_pop_gdf,trend_summary = population_analysis(
         layers['pop_2010'],
         layers['pop_2020'],
         layers['cluster_poly'])
@@ -66,12 +67,6 @@ def main():
     if run_population:
         print('--Performing population analysis')
         clipped_pop_gdf = run_population_analysis(layers)
-
-
-
-
-    
-
 
 if __name__ == "__main__":
     main()
