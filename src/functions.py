@@ -295,7 +295,32 @@ def plot_clusters(clustered_gdf,boundary_gdf):
 #############################################
 ##Generating polygons top 5 clusters#########
 #############################################
+#### Function to create a polygon for each cluster using convexhull
 
+def polygon_clusters(gdf):
+    
+    # List to store cluster hulls
+    hulls = []
+    
+    # Preprocessing step 
+    gdf = gdf.copy()
+    gdf["geometry"] = gdf.geometry.apply(lambda g: g.geoms[0] if g.geom_type == "MultiPoint" else g)
+    gdf = gdf.set_geometry("geometry")   
+    
+    # Group points by cluster
+    for cluster_value, group in gdf.groupby('cluster', observed=True):   # Change the date parameter
+        # Convert cluster points to MultiPoint
+        points = MultiPoint(group.geometry.values)
+        
+        # Compute convex hull
+        hull = points.convex_hull
+        
+        # Append as a dictionary
+        hulls.append({'cluster_id': cluster_value, 'geometry': hull})
+    
+    # convert hulls to a GeoDataFrame
+    hulls_gdf = gpd.GeoDataFrame(hulls, crs=gdf.crs)
+    return hulls_gdf
 
 #############################################
 ##CLipping datasets to the 5 polygons########
