@@ -1,3 +1,7 @@
+######################################
+#Import the main libraries
+######################################
+
 import geopandas as gpd
 import pandas as pd
 import numpy as np
@@ -7,10 +11,76 @@ from shapely.geometry import Point
 from scipy.spatial import KDTree
 from collections import deque
 import os
+import requests
+import json
+import geojson
+from matplotlib.cm import get_cmap
+from shapely.ops import unary_union
+from matplotlib.patches import Patch
+import math
+import fiona
+from pyproj import CRS
+from shapely.geometry import MultiPoint, Polygon, MultiPolygon
 
 ######################################
-#function to load layers and check crs
+#function request bounary layer
 ######################################
+# Creating a function to request Administrative boundaries via PDOK an using as a parameter a endpoint in the function an return a geojson file
+
+ 
+def get_feature(endpoint):
+
+    all_features = []
+    start_index = 0
+    count = 1000
+
+    while True:
+        params = {
+            'request': 'GetFeature',
+            'service': 'WFS',
+            'version': '2.0.0',
+            'typeNames': 'bestuurlijkegebieden:Gemeentegebied',
+            'outputFormat': 'application/json',
+            'crs': 'urn:ogc:def:crs:EPSG::28992',
+            'count': count,
+            'startIndex': start_index
+        }
+    
+        response = requests.get(endpoint, params=params)
+    
+        if response.status_code != 200:
+            print(response.text)
+            break
+    
+        data = response.json()
+
+        features = data["features"]                     # Extract the values stored in data under the key word 'features'.
+    
+        if not features:
+            break
+
+        all_features.extend(features)                   # add elementes from the previous step (features) to the end of a list.
+        start_index += count
+
+        print(f"Downloaded {len(all_features)} features")
+
+    # build final GeoJSON
+    full_geojson = {
+        "type": "FeatureCollection",
+        "features": all_features
+            }
+
+    with open("Administrative_boundaties.geojson", "w") as f:
+        geojson.dump(full_geojson, f, indent=4)
+
+
+#################################
+##Request boundary layer#########
+#################################
+
+#######################################
+#function to load layers and check crs#
+#######################################
 def load_layers(file_path):
     return gpd.read_file(file_path)
 
@@ -223,8 +293,44 @@ def plot_clusters(clustered_gdf,boundary_gdf):
     plt.show()
 
 #############################################
+##Generating polygons top 5 clusters#########
+#############################################
+#### Function to create a polygon for each cluster using convexhull
+
+def polygon_clusters(gdf):
+    
+    # List to store cluster hulls
+    hulls = []
+    
+    # Preprocessing step 
+    gdf = gdf.copy()
+    gdf["geometry"] = gdf.geometry.apply(lambda g: g.geoms[0] if g.geom_type == "MultiPoint" else g)
+    gdf = gdf.set_geometry("geometry")   
+    
+    # Group points by cluster
+    for cluster_value, group in gdf.groupby('cluster', observed=True):   # Change the date parameter
+        # Convert cluster points to MultiPoint
+        points = MultiPoint(group.geometry.values)
+        
+        # Compute convex hull
+        hull = points.convex_hull
+        
+        # Append as a dictionary
+        hulls.append({'cluster_id': cluster_value, 'geometry': hull})
+    
+    # convert hulls to a GeoDataFrame
+    hulls_gdf = gpd.GeoDataFrame(hulls, crs=gdf.crs)
+    return hulls_gdf
+
+#############################################
+##CLipping datasets to the 5 polygons########
+#############################################
+
+
+#############################################
 ##Population analysis on the top 5 clusters##
 #############################################
+
 
 #change population polygons id column to a common name
 def clean_population_layers(gdf_input,year):
