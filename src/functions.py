@@ -106,8 +106,6 @@ def get_feature(endpoint):
 #######################################
 #function to load layers and check crs#
 #######################################
-#def load_layers(file_path):
-    #return gpd.read_file(file_path)
 def load_layers(file_path, layer=None):
     '''
     The function reads a geopackage or geojson and convert it into a GeoDataFrame.
@@ -152,14 +150,6 @@ def load_layers(file_path, layer=None):
     return gdf, gdf_head
 
 # Function to validate the CRS project (28992) in a GeoDataFrame and if the CRS is not that, it will be reprojected to this CRS project.
-
-#def check_crs(gdf):
-    #if gdf.crs is None:
-        #raise ValueError("NO CRS defined.")
-    #if gdf.crs.to_epsg() != 28992:
-        #gdf = gdf.to_crs(epsg=28992)
-    #return gdf
-
 def check_crs(gdf):
     '''
     The function reads a GeoDataFrame and considerer a predefine CRS based on EPSG for the project then it reads the current crs and if 
@@ -181,7 +171,6 @@ def check_crs(gdf):
     
     if gdf.crs is None:
         raise ValueError("NO CRS defined.")
-    crs_initial = gdf.crs
     
     # Set the CRS target for the project
     target_crs = CRS.from_epsg(28992)
@@ -189,15 +178,12 @@ def check_crs(gdf):
     # Set the CRS for the project in case it is different to the target.
     if gdf.crs != target_crs:
         gdf = gdf.to_crs(target_crs)    # I suggest this improvement
-        
-    print(f'Initial CRS: {crs_initial}') 
-    print(f'Final CRS: {gdf.crs}') 
+
     return gdf
 
 ###########################################
 #function for elevation difference analysis
 ###########################################
-
 def point_to_xy(gdf: gpd.GeoDataFrame,value_column:str,decimals: int =1)->pd.DataFrame:
 
     #check if value_column(elevation value column) exists in gdf
@@ -240,6 +226,9 @@ def match_by_xy_and_diff(gdf1: gpd.GeoDataFrame, gdf2: gpd.GeoDataFrame,
 
     #calculate elevation difference
     matched_points['elev_diff'] = matched_points['elev_AHN2'] - matched_points['elev_AHN4']
+    print("\n--- Full Dataset Elevation Difference Statistics ---")
+    print(matched_points['elev_diff'].describe())
+    print("----------------------------------------------------\n")
 
     num_positive = (matched_points['elev_diff'] > 0).sum()
     num_negative_stable = (matched_points['elev_diff'] <= 0).sum()
@@ -256,7 +245,8 @@ def match_by_xy_and_diff(gdf1: gpd.GeoDataFrame, gdf2: gpd.GeoDataFrame,
         result = gpd.GeoDataFrame(matched_points, geometry=geometry, crs="EPSG:28992")
 
         #add color column based on elev_diff, if elev_diff >0:red, < or =0:green
-        #the following lines are for plotting the elevation change map, the result is saved. If needed,uncomment these lines.
+        #the following lines are for plotting the elevation change map, the result is saved. If needed,uncomment these lines, but it may ake some time
+
         ##result['color'] = 'green'
         ##result.loc[result['elev_diff'] > 0, 'color'] = 'red'
 
@@ -402,7 +392,6 @@ def plot_clusters(clustered_gdf,boundary_gdf):
 
 ### Function to create polygons based on convexhull proccess based on geodataframe which contains a list of points representing clusters,
 ### The function returns a geodataframe
-
 def polygon_clusters(gdf):
     '''
     The function reads one GeoDataFrames representing clusters and based on convexhull process create a polygon for each cluster.
@@ -509,8 +498,6 @@ def clip_pol(gdf1, gdf2):
 #############################################
 ##Population analysis on the top 5 clusters##
 #############################################
-
-
 #change population polygons id column to a common name
 def clean_population_layers(gdf_input,year):
     
@@ -570,8 +557,6 @@ def population_analysis(pop_2010_gdf,pop_2020_gdf,cluster_poly):
         ['Increased','Decreased','No change'],
         default='No change'
     )
-
-
 
     summary =clipped_pop.groupby(['cluster_id','trend']).size().unstack(fill_value=0)
     print('---Population trend summary by cluster id---')
@@ -1042,6 +1027,7 @@ def plot_classes_point(gdf, categorie, titles, base_layer=None, overlay_layers=N
 
     # Plotting 
     fig, ax = plt.subplots(figsize=(14, 8))
+    ax.set_aspect('equal')
     if base_layer is not None:
         base_layer.plot(ax=ax, edgecolor='green', facecolor='lightyellow')
     
@@ -1051,9 +1037,9 @@ def plot_classes_point(gdf, categorie, titles, base_layer=None, overlay_layers=N
     # Detect geometry type
     geom_type = gdf_plot.geometry.geom_type.unique()
     if all(gt in ['Point', 'MultiPoint'] for gt in geom_type):
-        gdf_plot.plot(ax=ax, color=gdf_plot['color'], edgecolor='black', markersize=50)
+        gdf_plot.plot(ax=ax, color=gdf_plot['color'], edgecolor='black', markersize=50,aspect = 'equal')
     else:
-        gdf_plot.plot(ax=ax, color=gdf_plot['color'], edgecolor='black', linewidth=0.3)
+        gdf_plot.plot(ax=ax, color=gdf_plot['color'], edgecolor='black', linewidth=0.3,aspect = 'equal')
 
     # Titles and labels
     ax.set_title(titles, fontsize=16, fontweight='bold', pad=12)
