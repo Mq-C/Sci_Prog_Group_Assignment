@@ -41,7 +41,6 @@ data_paths = {
     'ahn4': elevation_AHN4_path,
     'pop_2010':population_2010_path,
     'pop_2020':population_2020_path,
-    #'groningen_boundary':groningen_boundary_path,
     'land_2010':Land_use_2010_path,
     'land_2020':Land_use_2020_path,
     'wells': wells_path
@@ -102,6 +101,7 @@ def Groningen_Province(gdf_adm):
     gdf_adm= check_crs(gdf_adm)
     gdf_adm_fil = filter_province(gdf_adm, 'groningen')
     gdf_adm_gron=merg_province(gdf_adm_fil)
+    gdf_adm_gron.crs = "EPSG:28992"
     print(f'records after merging: {len(gdf_adm_gron)}')
     return gdf_adm_gron
     
@@ -143,6 +143,7 @@ def land_use_2020_clusters(layers,generated_polygons,gdf_adm_gron):
 def wells_Groningen_analysis(layers, gdf_adm_gron):
     gdf_wll = layers['wells']
     gdf_wll=clip_pol(gdf_wll,gdf_adm_gron)
+    print(f"DEBUG: Number of wells after clipping to province: {len(gdf_wll)}")
     gdf_wll=update_field(gdf_wll, 'delivery_context', 'wetMilieubeheerOfBesluitLozenBuitenInrichtingen', 'other')
     gdf_wll=create_field_pt(gdf_wll, 'date_interval')
     print(f'---plotting in a map: Wells in Groningen grouped by date---')
@@ -154,7 +155,7 @@ def wells_Groningen_analysis(layers, gdf_adm_gron):
 def wells_clusters_analysis(layers,gdf_adm_gron,generated_polygons):
     print('---Wells inside the clusters before 2010---')
     gdf_wll = wells_Groningen_analysis(layers,gdf_adm_gron).copy()
-    
+
     if gdf_wll.empty:
         print("Warning: No wells found in the province boundary.")
         return
@@ -188,10 +189,9 @@ def main():
         'wells': load_layers(wells_path, layer='Groundwater_usage_facility_2')[0]
     }
 
-
-
-    for name,gdf in layers.items():
-        check_crs(gdf)
+    
+    for name in layers:
+        layers[name] = check_crs(layers[name])
 
     generated_polygons=None
 
