@@ -558,8 +558,6 @@ def population_analysis(pop_2010_gdf,pop_2020_gdf,cluster_poly):
         default='No change'
     )
 
-
-
     summary =clipped_pop.groupby(['cluster_id','trend']).size().unstack(fill_value=0)
     print('---Population trend summary by cluster id---')
     print(summary)

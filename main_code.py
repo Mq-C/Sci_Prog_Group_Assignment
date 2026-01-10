@@ -22,11 +22,6 @@ from src.functions import (match_by_xy_and_diff,
 import matplotlib.pyplot as plt
 import pandas as pd
 
-#elevation_AHN2_path = "F:/master/mod_2/Sci_Prog_For_Geospatial_Sciences/Pair assignment/data/AHN2_Groningen_Points.gpkg"
-#elevation_AHN4_path = "F:/master/mod_2/Sci_Prog_For_Geospatial_Sciences/Pair assignment/data/AHN4_Groningen_Points.gpkg"
-#population_2010_path = "F:/master/mod_2/Sci_Prog_For_Geospatial_Sciences/Pair assignment/data/Pop_2010.gpkg"
-#population_2020_path = "F:/master/mod_2/Sci_Prog_For_Geospatial_Sciences/Pair assignment/data/Pop_2020.gpkg"
-#groningen_boundary_path = 'F:/master/mod_2/Sci_Prog_For_Geospatial_Sciences/Pair assignment/data/Groningen_boundary/Groningen_28992.gpkg'
 elevation_AHN2_path = r"F:/master/mod_2/Sci_Prog_For_Geospatial_Sciences/Pair assignment/data/AHN2_Groningen_Points.gpkg"
 elevation_AHN4_path = r"F:/master/mod_2/Sci_Prog_For_Geospatial_Sciences/Pair assignment/data/AHN4_Groningen_Points.gpkg"
 population_2010_path = r"F:/master/mod_2/Sci_Prog_For_Geospatial_Sciences/Pair assignment/data/Pop_2010.gpkg"
@@ -48,13 +43,13 @@ data_paths = {
 
 # Functions to run (choose true or false)
 run_elevation =True
-run_population=False
+run_population=True
 run_boundaries=True
 run_province=True
-run_land_use_2010_province = False
-run_land_use_2020_province =False
-run_land_use_2010_clusters = False
-run_land_use_2020_clusters = False
+run_land_use_2010_province = True
+run_land_use_2020_province =True
+run_land_use_2010_clusters = True
+run_land_use_2020_clusters = True
 run_Groningen_wells = True
 run_clusters_wells = True
 
@@ -76,6 +71,7 @@ def run_population_analysis(layers,generated_polygons):
         layers['pop_2010'],
         layers['pop_2020'],
         generated_polygons)
+    
     
     #plotting population polygons within the 5 clusters
     fig,ax =plt.subplots(figsize=(10,10))
