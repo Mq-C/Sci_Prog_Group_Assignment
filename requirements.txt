@@ -7,3 +7,8 @@ numpy
 pytest
 pytest-cov
 matplotlib
+scipy
+requests
+geojson
+fiona
+pyproj
