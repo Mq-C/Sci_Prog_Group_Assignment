@@ -42,6 +42,7 @@ def get_feature(endpoint):
         
     Returns:
         Administrative_boundaties (geojson): It contains the GeoJSON file with all the information stored
+        gdf (GeoDataFrame): It contains a GeoDataFrame with the information and set a CRS.
             
     Raises: 
        RuntimeError: It will raise, if the response code is different of 200.
@@ -97,7 +98,10 @@ def get_feature(endpoint):
     # Store the GeoJSON file considering a default name
     with open("Administrative_boundaties.geojson", "w") as f:
         geojson.dump(full_geojson, f, indent=4)
-
+    
+    # convert also in a geodataframe
+    gdf = gpd.GeoDataFrame.from_features(full_geojson,crs="EPSG:28992")
+    return gdf
 
 #######################################
 #function to load layers and check crs#
@@ -726,7 +730,7 @@ def area_ha(gdf):
 #############################################
 ### Function which evaluates if a column exist in a Geodataframe. If the column exists, it will create a new field and fill with information (specially for the land use 2020)
 
-def create_field(gdf, name_col):
+def create_field_pol(gdf, name_col):
         '''
     The function reads one GeoDataFrames and based on name_col, it evaluates if the name_col exists, and if it is true, it will create a 
     new column and fills the column with a names based on codes published in PDOK website (processing data step).
@@ -934,7 +938,7 @@ def update_field(gdf, column_name, original_name, final_name):
 ### Function which takes a geodataframe a name_col, it creates a new field based on name_col and fill it grouping the data by year wells in three intervals
 ### <=2010', '2011-2022', '>2022', these intevals are related to the elevation data sets
 
-def create_field(gdf, name_col):
+def create_field_pt(gdf, name_col):
         '''
     The function reads one GeoDataFrames and creates a new column (name_col). The function takes a specific columns and coverts it
     to data time format, and after that it groupes the data based on date intervale previously defined (processing data step).
