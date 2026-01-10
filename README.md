@@ -9,4 +9,5 @@
 # Disclaimer:
 ## The authors declared that they used genAI to improve the code and fix bugs.
 
-# Running the code: download the processed data and update the file paths in the configuration file to match your local directory structure before execution
+# Running the code: 
+## download the processed data and update the file paths in the configuration file to match your local directory structure before execution
