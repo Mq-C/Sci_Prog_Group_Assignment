@@ -240,6 +240,9 @@ def match_by_xy_and_diff(gdf1: gpd.GeoDataFrame, gdf2: gpd.GeoDataFrame,
 
     #calculate elevation difference
     matched_points['elev_diff'] = matched_points['elev_AHN2'] - matched_points['elev_AHN4']
+    print("\n--- Full Dataset Elevation Difference Statistics ---")
+    print(matched_points['elev_diff'].describe())
+    print("----------------------------------------------------\n")
 
     num_positive = (matched_points['elev_diff'] > 0).sum()
     num_negative_stable = (matched_points['elev_diff'] <= 0).sum()
@@ -1042,18 +1045,19 @@ def plot_classes_point(gdf, categorie, titles, base_layer=None, overlay_layers=N
 
     # Plotting 
     fig, ax = plt.subplots(figsize=(14, 8))
+    ax.set_aspect('equal')
     if base_layer is not None:
-        base_layer.plot(ax=ax, edgecolor='green', facecolor='lightyellow')
+        base_layer.plot(ax=ax, edgecolor='green', facecolor='lightyellow',aspect = 'equal')
     
     if overlay_layers is not None:
-        overlay_layers.plot(ax=ax, facecolor="none", edgecolor="black", linewidth=0.3)
+        overlay_layers.plot(ax=ax, facecolor="none", edgecolor="black", linewidth=0.3,aspect = 'equal')
     
     # Detect geometry type
     geom_type = gdf_plot.geometry.geom_type.unique()
     if all(gt in ['Point', 'MultiPoint'] for gt in geom_type):
-        gdf_plot.plot(ax=ax, color=gdf_plot['color'], edgecolor='black', markersize=50)
+        gdf_plot.plot(ax=ax, color=gdf_plot['color'], edgecolor='black', markersize=50,aspect = 'equal')
     else:
-        gdf_plot.plot(ax=ax, color=gdf_plot['color'], edgecolor='black', linewidth=0.3)
+        gdf_plot.plot(ax=ax, color=gdf_plot['color'], edgecolor='black', linewidth=0.3,aspect = 'equal')
 
     # Titles and labels
     ax.set_title(titles, fontsize=16, fontweight='bold', pad=12)

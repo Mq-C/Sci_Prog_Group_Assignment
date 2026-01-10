@@ -27,14 +27,14 @@ import pandas as pd
 #population_2010_path = "F:/master/mod_2/Sci_Prog_For_Geospatial_Sciences/Pair assignment/data/Pop_2010.gpkg"
 #population_2020_path = "F:/master/mod_2/Sci_Prog_For_Geospatial_Sciences/Pair assignment/data/Pop_2020.gpkg"
 #groningen_boundary_path = 'F:/master/mod_2/Sci_Prog_For_Geospatial_Sciences/Pair assignment/data/Groningen_boundary/Groningen_28992.gpkg'
-elevation_AHN2_path = r"C:/MGEO/Y1/Q2/Scientific Prog Geospatial Sciences/Programming exercises/Week_6/GIT HUB exercise/Base_file/AHN2_Groningen_Points.gpkg"
-elevation_AHN4_path = r"C:/MGEO/Y1/Q2/Scientific Prog Geospatial Sciences/Programming exercises/Week_6/GIT HUB exercise/Base_file/AHN4_Groningen_Points.gpkg"
-population_2010_path = r"C:/MGEO/Y1/Q2/Scientific Prog Geospatial Sciences/Programming exercises/Week_6/GIT HUB exercise/Base_file/Pop_2010.gpkg"
-population_2020_path = r"C:/MGEO/Y1/Q2/Scientific Prog Geospatial Sciences/Programming exercises/Week_6/GIT HUB exercise/Base_file/Pop_2020.gpkg"
+elevation_AHN2_path = r"F:/master/mod_2/Sci_Prog_For_Geospatial_Sciences/Pair assignment/data/AHN2_Groningen_Points.gpkg"
+elevation_AHN4_path = r"F:/master/mod_2/Sci_Prog_For_Geospatial_Sciences/Pair assignment/data/AHN4_Groningen_Points.gpkg"
+population_2010_path = r"F:/master/mod_2/Sci_Prog_For_Geospatial_Sciences/Pair assignment/data/Pop_2010.gpkg"
+population_2020_path = r"F:/master/mod_2/Sci_Prog_For_Geospatial_Sciences/Pair assignment/data/Pop_2020.gpkg"
 endpoint = 'https://service.pdok.nl/kadaster/bestuurlijkegebieden/wfs/v1_0?'
-Land_use_2010_path = r"C:\MGEO\Y1\Q2\Scientific Prog Geospatial Sciences\Programming exercises\Week_6\bestand_bodemgebruik_2010.gpkg"
-Land_use_2020_path = r"C:\MGEO\Y1\Q2\Scientific Prog Geospatial Sciences\Programming exercises\Week_6\Land_use_2020.gpkg"
-wells_path = r"C:\MGEO\Y1\Q2\Scientific Prog Geospatial Sciences\Programming exercises\Week_6\Groundwater_usage_facilty.gpkg"
+Land_use_2010_path = r"F:/master/mod_2/Sci_Prog_For_Geospatial_Sciences/Pair assignment\data/outputs\bestand_bodemgebruik_2010.gpkg"
+Land_use_2020_path = r"F:/master/mod_2/Sci_Prog_For_Geospatial_Sciences/Pair assignment/data/outputs/Land_use_2020.gpkg"
+wells_path = r'F:/master/mod_2/Sci_Prog_For_Geospatial_Sciences/Pair assignment\data/outputs/Groundwater_usage_facilty.gpkg'
 
 data_paths = {
     'ahn2': elevation_AHN2_path ,
@@ -49,13 +49,13 @@ data_paths = {
 
 # Functions to run (choose true or false)
 run_elevation =True
-run_population=True
+run_population=False
 run_boundaries=True
 run_province=True
-run_land_use_2010_province = True
-run_land_use_2020_province = True
-run_land_use_2010_clusters = True
-run_land_use_2020_clusters = True
+run_land_use_2010_province = False
+run_land_use_2020_province =False
+run_land_use_2010_clusters = False
+run_land_use_2020_clusters = False
 run_Groningen_wells = True
 run_clusters_wells = True
 
@@ -131,9 +131,9 @@ def land_use_2010_clusters(layers, generated_polygons):
     print(f'---plotting in a bar chart: Land use 2010 clusters in Groningen---')
     plot_bar_classes(gdf2010_clip, 'categorie', 'Land use 2010 for area with the most sinking points')
     
-def land_use_2020_clusters(generated_polygons):
-    gdf2020_clip = land_use_2020_province().copy
-    gdf2020_clip = clip_pol(gdf2020_clip, generated_polygons)
+def land_use_2020_clusters(layers,generated_polygons,gdf_adm_gron):
+    gdf2020_prov = land_use_2020_province(layers,gdf_adm_gron)
+    gdf2020_clip = clip_pol(gdf2020_prov.copy(), generated_polygons)
     gdf2020_clip=area_ha(gdf2020_clip)
     print(f'---plotting in a map: Land use 2020 clusters in Groningen---')
     plot_classes(gdf2020_clip, 'categorie', 'Land use 2020 for area with the most sinking points')
@@ -151,22 +151,27 @@ def wells_Groningen_analysis(layers, gdf_adm_gron):
     plot_bar_classes_point(gdf_wll)
     return gdf_wll
 
-def wells_clusters_analysis(generated_polygons, base_layer, overlay_layers):
+def wells_clusters_analysis(layers,gdf_adm_gron,generated_polygons):
     print('---Wells inside the clusters before 2010---')
-    gdf_wll = wells_Groningen_analysis().copy
+    gdf_wll = wells_Groningen_analysis(layers,gdf_adm_gron).copy()
+    
+    if gdf_wll.empty:
+        print("Warning: No wells found in the province boundary.")
+        return
+    
     gdf_wll_2010 = gdf_wll[gdf_wll['date_interval'] == '<=2010'].copy()
     gdf_wll_2010 = clip_pol(gdf_wll_2010, generated_polygons)
     print(f'---plotting in a map: Wells inside the clusters before 2010---')
-    plot_classes_point(gdf_wll_2010, 'date_interval', 'Wells inside the polygons before 2010',base_layer=base_layer, overlay_layers=generated_polygons)
+    plot_classes_point(gdf_wll_2010, 'date_interval', 'Wells inside the polygons before 2010',base_layer=gdf_adm_gron, overlay_layers=generated_polygons)
     print(f'---plotting in a bar chart: Wells inside the clusters before 2010---')
     plot_bar_classes_point(gdf_wll_2010)
     
     print('---Wells inside the clusters between 2010 - 2022---')
-    gdf_wll = wells_Groningen_analysis().copy
+    gdf_wll = wells_Groningen_analysis(layers,gdf_adm_gron).copy()
     gdf_wll_2020 = gdf_wll[gdf_wll['date_interval'] == '2011-2022'].copy()
     gdf_wll_2020 = clip_pol(gdf_wll_2020, generated_polygons)
     print(f'---plotting in a map: Wells inside the clusters between 2010 - 2022---')
-    plot_classes_point(gdf_wll_2020, 'date_interval', 'Wells inside the polygons before 2010',base_layer=base_layer, overlay_layers=generated_polygons)
+    plot_classes_point(gdf_wll_2020, 'date_interval', 'Wells inside the polygons before 2010',base_layer=gdf_adm_gron, overlay_layers=generated_polygons)
     print(f'---plotting in a bar chart: Wells inside the clusters between 2010 - 2022---')
     plot_bar_classes_point(gdf_wll_2020)
     
@@ -197,10 +202,14 @@ def main():
     if run_province:
         print('---Getting Province Boundary---')
         gdf_adm_gron = Groningen_Province(gdf_adm)
+
+        if gdf_adm_gron.empty:
+            print("ERROR: Groningen boundary GeoDataFrame is empty. Check WFS connection.")
+            return # Stop execution if there is no data
         
     if run_elevation:
-        cluster_data=run_elevation_analysis(gdf_adm_gron)
-        #cluster_data=run_elevation_analysis(layers)
+        #cluster_data=run_elevation_analysis(gdf_adm_gron)
+        cluster_data=run_elevation_analysis(layers)
         #plot_clusters(cluster_data,layers['groningen_boundary'])
         plot_clusters(cluster_data,gdf_adm_gron)
         print('---Generating polygons for top 5 clusters---')
@@ -225,7 +234,7 @@ def main():
         
     if run_land_use_2020_clusters:
         print('---Land use 2020 Groningen clusters in Groningen---')
-        land_use_2020_clusters(layers, generated_polygons)
+        land_use_2020_clusters(layers, generated_polygons,gdf_adm_gron)
         
     if run_Groningen_wells:
         print('---Wells in Groningen grouped by date---')
