@@ -144,7 +144,7 @@ def load_layers(file_path, layer=None):
         # Raise a error if for any reason geopandas cannot read the geopackage
         raise ValueError(f'Error reading the file {file_path}: {e}')
     
-    print(gdf_head)
+    #print(gdf_head)
     return gdf, gdf_head
 
 # Function to validate the CRS project (28992) in a GeoDataFrame and if the CRS is not that, it will be reprojected to this CRS project.
@@ -252,19 +252,20 @@ def match_by_xy_and_diff(gdf1: gpd.GeoDataFrame, gdf2: gpd.GeoDataFrame,
         result = gpd.GeoDataFrame(matched_points, geometry=geometry, crs="EPSG:28992")
 
         #add color column based on elev_diff, if elev_diff >0:red, < or =0:green
-        #result['color'] = 'green'
-        #result.loc[result['elev_diff'] > 0, 'color'] = 'red'
+        #the following lines are for plotting the elevation change map, the result is saved. If needed,uncomment these lines.
+        ##result['color'] = 'green'
+        ##result.loc[result['elev_diff'] > 0, 'color'] = 'red'
 
-        #fig,ax = plt.subplots(figsize=(10,10))
-        #result.plot(ax=ax, color=result['color'], markersize=5)
-        #legend_elements = [
-        #    Line2D([0], [0], marker='o', color='w', label='elev_diff <= 0', markerfacecolor='green', markersize=8),
-       #     Line2D([0], [0], marker='o', color='w', label='elev_diff > 0', markerfacecolor='red', markersize=8)
-       # ]
-       # ax.legend(handles=legend_elements, title='Elevation Difference (m)')
-       # ax.set_title('Gronigen Elevation Difference between AHN2 and AHN4 Points')
-       # ax.set_axis_off()
-       # plt.show()
+        ##fig,ax = plt.subplots(figsize=(10,10))
+        ##result.plot(ax=ax, color=result['color'], markersize=5)
+        ##legend_elements = [
+           ## Line2D([0], [0], marker='o', color='w', label='elev_diff <= 0', markerfacecolor='green', markersize=8),
+           ##Line2D([0], [0], marker='o', color='w', label='elev_diff > 0', markerfacecolor='red', markersize=8)
+        ##]
+        ##ax.legend(handles=legend_elements, title='Elevation Difference (m)')
+        ##ax.set_title('Gronigen Elevation Difference between AHN2 and AHN4 Points')
+        ##ax.set_axis_off()
+        ##plt.show()
         return result
     return matched_points
 
@@ -346,7 +347,7 @@ def KD_clustering(gdf: gpd.GeoDataFrame,seed: int =43):
     output_path = "F:/master/mod_2/Sci_Prog_For_Geospatial_Sciences/Sci_Prog_Group_Assignment/outputs/top 5 sinking clusters.gpkg"
     
     top_5_df.to_file(output_path,driver ='GPKG',layer ='top 5 sinking clusters',mode='w')
-    return df
+    return top_5_df
 
 def plot_clusters(clustered_gdf,boundary_gdf):
 
@@ -550,11 +551,11 @@ def population_analysis(pop_2010_gdf,pop_2020_gdf,cluster_poly):
     print(f'Total population polygons matched between 2010 and 2020: {len(matched_pop_df)}')
 
     #clip population polygon to the 5 cluster
-    clipped_pop = gpd.sjoin(matched_pop_df,
+    joined_pop = gpd.sjoin(matched_pop_df,
                             cluster_poly[['cluster_id','geometry']],
                             how='inner',
                             predicate='intersects').copy()
-    
+    clipped_pop = joined_pop.drop_duplicates(subset='grid_id').copy()
     print(f'Totlal matched popualtion polygons  within the 5 clusters: {len(clipped_pop)}')
 
     #calculate difference
@@ -565,8 +566,11 @@ def population_analysis(pop_2010_gdf,pop_2020_gdf,cluster_poly):
         ['Increased','Decreased','No change'],
         default='No change'
     )
+
+
+
     summary =clipped_pop.groupby(['cluster_id','trend']).size().unstack(fill_value=0)
-    print('---Population trend summary by cluster id')
+    print('---Population trend summary by cluster id---')
     print(summary)
 
 
