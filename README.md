@@ -6,8 +6,7 @@
 ## The original administrative boundaries form the Netherlands is from PDOK and can be found in https://service.pdok.nl/kadaster/bestuurlijkegebieden/wfs/v1_0?request=GetCapabilities&service=WFS, for the project the information was retrieved via WFS request.
 ## The original Groundwater wells data is from PDOK and can be found https://www.pdok.nl/introductie/-/article/bro-grondwatergebruiksysteem-guf-
 ## The processed population, elevation data, land use, administrative boundaries and groundwater wells can be downloaded can be found in the provided zip file.
-# Disclaimer:
-## The authors declared that they used genAI to improve the code and fix bugs.
-
 # Running the code: 
 ## download the processed data and update the file paths in the configuration file to match your local directory structure before execution
+# Disclaimer:
+## The authors declared that they used genAI to improve the code and fix bugs.
