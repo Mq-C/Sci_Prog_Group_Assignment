@@ -1,0 +1,26 @@
+[project]
+name = "sci-prog-group-assignment"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "Mengqiu Chi",email = "m.chi-1@student.utwente.nl"}
+]
+readme = "README.md"
+requires-python = ">=3.13,<4.0"
+dependencies = [
+    "geopandas (>=1.1.2,<2.0.0)",
+    "pandas (>=2.3.3,<3.0.0)",
+    "numpy (>=2.4.1,<3.0.0)",
+    "matplotlib (>=3.10.8,<4.0.0)",
+    "scipy (>=1.17.0,<2.0.0)",
+    "requests (>=2.32.5,<3.0.0)",
+    "geojson (>=3.2.0,<4.0.0)",
+    "fiona (>=1.10.1,<2.0.0)",
+    "pyproj (>=3.7.2,<4.0.0)",
+    "shapely (>=2.1.2,<3.0.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
