@@ -139,7 +139,7 @@ def load_layers(file_path, layer=None):
             raise ValueError(f'layer {layer} not found. Available leyers:{layers}')
         
     try:    
-        gdf = gpd.read_file(file_path)
+        gdf = gpd.read_file(file_path,layer=layer)
         gdf_head = gdf.head()
         
     except Exception as e:

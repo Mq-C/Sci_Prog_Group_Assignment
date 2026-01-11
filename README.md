@@ -14,5 +14,3 @@
 ## download the processed data and update the file paths in the configuration file to match your local directory structure before execution
 # Disclaimer:
 ## The authors declared that they used genAI to improve the code and fix bugs.
-
-
